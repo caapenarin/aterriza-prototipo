@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATERRIZA · Turismo inteligente en el aeropuerto</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root{
+  --ink:#14213D;
+  --ink-soft:#4C5670;
+  --paper:#F7F4EC;
+  --paper-2:#EFEAE0;
+  --paper-3:#FFFFFF;
+  --coral:#E0712B;
+  --coral-dark:#C05A1B;
+  --teal:#146B64;
+  --gold:#C98F00;
+  --line:#D8D0BD;
+  --line-soft:#E7E1D3;
+  --radius:18px;
+  --font-display:'Space Grotesk', 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-mono:'JetBrains Mono', 'Courier New', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+.app{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--paper);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  border-left:1px solid var(--line-soft);
+  border-right:1px solid var(--line-soft);
+}
+
+/* ---------- Header ---------- */
+.topbar{
+  background:var(--ink);
+  color:var(--paper);
+  padding:18px 22px 16px;
+  position:relative;
+  overflow:hidden;
+}
+.topbar::after{
+  content:"";
+  position:absolute; right:-40px; top:-40px;
+  width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle, rgba(224,113,43,0.35), transparent 70%);
+}
+.brandrow{display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1;}
+.brand{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:24px;
+  letter-spacing:0.5px;
+  display:flex; align-items:center; gap:8px;
+}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--coral);display:inline-block;}
+.airportcode{
+  font-family:var(--font-mono);
+  font-size:12px;
+  border:1px solid rgba(247,244,236,0.35);
+  border-radius:999px;
+  padding:5px 11px;
+  letter-spacing:1px;
+  color:#E8E4DA;
+}
+.tagline{
+  font-size:13.5px;
+  color:#C7CCDA;
+  margin-top:6px;
+  position:relative; z-index:1;
+}
+
+/* progress */
+.progress-wrap{padding:14px 22px 0; background:var(--paper);}
+.progress-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--ink-soft);
+  letter-spacing:1px;
+  display:flex; justify-content:space-between;
+  margin-bottom:8px;
+}
+.progress-track{height:5px; background:var(--line-soft); border-radius:99px; overflow:hidden;}
+.progress-fill{height:100%; background:linear-gradient(90deg,var(--coral),var(--gold)); border-radius:99px; transition:width .35s ease;}
+.gatedots{display:flex; gap:6px; margin-top:10px;}
+.gatedot{flex:1; height:3px; background:var(--line-soft); border-radius:2px;}
+.gatedot.done{background:var(--coral);}
+.gatedot.current{background:var(--ink);}
+
+/* ---------- Main content ---------- */
+.content{flex:1; padding:22px 22px 110px;}
+.step{display:none;}
+.step.active{display:block; animation:fadein .35s ease;}
+@keyframes fadein{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  letter-spacing:1.5px;
+  color:var(--coral-dark);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+h1.qtitle{
+  font-family:var(--font-display);
+  font-size:25px;
+  line-height:1.25;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+.qsub{font-size:14px; color:var(--ink-soft); margin:0 0 20px; line-height:1.5;}
+
+.chipgrid{display:flex; flex-direction:column; gap:10px;}
+.chip{
+  border:1.5px solid var(--line);
+  background:var(--paper-3);
+  border-radius:14px;
+  padding:15px 16px;
+  display:flex; align-items:center; gap:13px;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink);
+  text-align:left;
+  transition:all .15s ease;
+  -webkit-tap-highlight-color:transparent;
+  min-height:58px;
+  width:100%;
+}
+.chip .ic{font-size:21px; width:28px; text-align:center; flex-shrink:0;}
+.chip .meta{font-size:12.5px; color:var(--ink-soft); font-weight:400; margin-top:2px;}
+.chip:hover{border-color:var(--coral); background:#FFF8F2;}
+.chip.selected{
+  border-color:var(--coral);
+  background:linear-gradient(0deg,#FFF3E9,#FFF7EF);
+  box-shadow:0 2px 0 rgba(224,113,43,0.15) inset;
+}
+.chip.selected::after{
+  content:"✓"; margin-left:auto; color:var(--coral); font-weight:700; font-size:16px;
+}
+
+/* ---------- Bottom action bar ---------- */
+.actionbar{
+  position:sticky; bottom:0; left:0; right:0;
+  background:var(--paper);
+  border-top:1px solid var(--line-soft);
+  padding:14px 22px 18px;
+  display:flex; gap:10px;
+  max-width:560px; margin:0 auto;
+}
+.btn{
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:14.5px;
+  border-radius:13px;
+  padding:14px 18px;
+  border:none;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-primary{background:var(--ink); color:var(--paper); flex:1;}
+.btn-primary:disabled{background:#B9BBC4; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink-soft); border:1.5px solid var(--line);}
+.btn-coral{background:var(--coral); color:white;}
+
+/* ---------- Boarding pass result ---------- */
+.bpass{
+  background:var(--paper-3);
+  border-radius:20px;
+  border:1.5px solid var(--line);
+  box-shadow:0 14px 30px -18px rgba(20,33,61,0.45);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.bpass-top{padding:20px 20px 16px; position:relative;}
+.bpass-route{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.bpass-city{font-family:var(--font-display); font-size:20px; font-weight:700;}
+.bpass-city small{display:block; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); font-weight:400; letter-spacing:1px; margin-top:2px;}
+.bpass-arrow{color:var(--coral); font-size:20px;}
+.scene{width:100%; height:128px; border-radius:13px; overflow:hidden; margin-bottom:14px; display:block;}
+.bpass-name{font-family:var(--font-display); font-weight:700; font-size:21px; margin:0 0 4px;}
+.bpass-sub{font-size:13px; color:var(--ink-soft); margin:0 0 16px;}
+.bpass-gridinfo{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px;}
+.infocell .lab{font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--ink-soft); text-transform:uppercase;}
+.infocell .val{font-family:var(--font-display); font-size:16px; font-weight:700; margin-top:2px;}
+
+.perforation{
+  position:relative;
+  border-top:2px dashed var(--line);
+  margin:0 0;
+}
+.perforation::before, .perforation::after{
+  content:""; position:absolute; top:-11px; width:22px; height:22px; background:var(--paper); border-radius:50%;
+}
+.perforation::before{left:-11px;} .perforation::after{right:-11px;}
+
+.bpass-bottom{padding:18px 20px 20px;}
+.section-label{font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.2px; color:var(--coral-dark); text-transform:uppercase; margin-bottom:8px; margin-top:16px;}
+.section-label:first-child{margin-top:0;}
+ul.tightlist{margin:0; padding:0 0 0 18px; font-size:13.8px; line-height:1.65; color:var(--ink);}
+ul.tightlist li{margin-bottom:3px;}
+.pricewrap{display:flex; align-items:baseline; justify-content:space-between; background:var(--paper-2); border-radius:13px; padding:14px 16px; margin-top:16px;}
+.pricewrap .pl{font-size:12.5px; color:var(--ink-soft);}
+.pricewrap .pv{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink);}
+.pricewrap .pv small{font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); font-weight:400;}
+.pointsrow{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--teal); font-weight:600;}
+.barcode{height:34px; margin-top:16px; display:flex; gap:2px; align-items:flex-end;}
+.barcode div{background:var(--ink); flex-shrink:0;}
+
+/* ---------- Feedback ---------- */
+.card{
+  background:var(--paper-3); border:1.5px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px;
+}
+.starsrow{display:flex; gap:8px; margin:10px 0 14px;}
+.star{
+  width:38px; height:38px; border-radius:50%; border:1.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; background:white;
+}
+.star.on{background:var(--gold); border-color:var(--gold); color:white;}
+textarea{
+  width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px; font-family:var(--font-body);
+  font-size:13.8px; resize:none; min-height:64px; color:var(--ink);
+}
+input[type=text]{
+  width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px; font-family:var(--font-body);
+  font-size:13.8px; color:var(--ink); margin-bottom:10px;
+}
+
+.testimonial{border-top:1px solid var(--line-soft); padding:12px 0;}
+.testimonial:first-child{border-top:none; padding-top:0;}
+.t-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+.t-name{font-weight:700; font-size:13.5px;}
+.t-stars{color:var(--gold); font-size:13px;}
+.t-meta{font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft); margin-bottom:5px;}
+.t-comment{font-size:13.3px; color:var(--ink); line-height:1.5;}
+
+/* ---------- Insights ---------- */
+.statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;}
+.statbox{background:var(--paper-2); border-radius:14px; padding:14px;}
+.statbox .num{font-family:var(--font-display); font-size:26px; font-weight:700;}
+.statbox .lab{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+.histobar{display:flex; align-items:center; gap:10px; margin-bottom:7px;}
+.histobar .hl{width:46px; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);}
+.histotrack{flex:1; height:10px; background:var(--line-soft); border-radius:6px; overflow:hidden;}
+.histofill{height:100%; background:var(--coral); border-radius:6px;}
+.histobar .hc{width:24px; text-align:right; font-size:11.5px; color:var(--ink-soft); font-family:var(--font-mono);}
+
+/* ---------- Footer nav ---------- */
+.footerlink{
+  text-align:center; padding:16px 0 4px; font-size:12px; color:var(--ink-soft);
+}
+.footerlink a{color:var(--teal); text-decoration:none; font-weight:600; cursor:pointer;}
+
+.badge-tier{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11px; padding:4px 10px; border-radius:99px; background:var(--ink); color:var(--paper);}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===================== HEADER ===================== -->
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ATERRIZA <span style="font-size:13px;font-weight:400;color:var(--coral);font-family:var(--font-mono);letter-spacing:1px;margin-left:6px;">SPRINT 5</span></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="langBtn" onclick="toggleLang()" style="font-family:var(--font-mono);font-size:11px;padding:5px 10px;border-radius:99px;border:1px solid rgba(247,244,236,0.4);background:transparent;color:#E8E4DA;cursor:pointer;letter-spacing:1px;">ES / EN</button>
+        <div class="airportcode" id="airportcode">BOG · T1 — SALA DE LLEGADAS</div>
+      </div>
+    </div>
+    <div class="tagline" id="tagline">Tu próximo destino, antes de salir por la puerta.</div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label"><span id="stepLabel">PASO 1 DE 7</span><span id="stepName">Quién viaja</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:16.6%"></div></div>
+    <div class="gatedots" id="gatedots"></div>
+  </div>
+
+  <!-- ===================== CONTENT ===================== -->
+  <div class="content" id="content">
+
+    <!-- STEP 1 - SPRINT 5: selector de personas + bilingue -->
+    <div class="step" data-step="0">
+      <div class="eyebrow">Perfil de viaje</div>
+      <h1 class="qtitle" id="q0title">¿Quién viaja hoy?</h1>
+      <p class="qsub" id="q0sub">Así ajustamos las recomendaciones, los precios por persona y el total del grupo.</p>
+      <div class="chipgrid" data-group="perfil">
+        <button class="chip" data-value="individual"><span class="ic">🧍</span><span><div>Individual</div><div class="meta">Viajo solo/a</div></span></button>
+        <button class="chip" data-value="pareja"><span class="ic">🧑‍🤝‍🧑</span><span><div>En pareja</div><div class="meta">2 personas</div></span></button>
+        <button class="chip" data-value="familia"><span class="ic">👨‍👩‍👧</span><span><div>Familia / núcleo familiar</div><div class="meta">Con niños o adultos mayores</div></span></button>
+        <button class="chip" data-value="grupo"><span class="ic">👥</span><span><div>Grupo de amigos</div><div class="meta">4 o más personas</div></span></button>
+        <button class="chip" data-value="negocios"><span class="ic">💼</span><span><div>Viaje de negocios</div><div class="meta">Agenda corporativa / eventos</div></span></button>
+      </div>
+      <div id="personasWrap" style="margin-top:18px;padding:16px;background:var(--paper-2);border-radius:14px;display:none;">
+        <p style="font-family:var(--font-mono);font-size:11.5px;color:var(--coral-dark);letter-spacing:1.2px;text-transform:uppercase;margin:0 0 12px;" id="personasTitle">¿CUÁNTAS PERSONAS VIAJAN?</p>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button onclick="changePersonas(-1)" style="width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:white;font-size:20px;cursor:pointer;font-weight:700;">−</button>
+          <span id="personasNum" style="font-family:var(--font-display);font-size:32px;font-weight:700;min-width:36px;text-align:center;">2</span>
+          <button onclick="changePersonas(1)" style="width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:white;font-size:20px;cursor:pointer;font-weight:700;">+</button>
+          <span id="personasLabel" style="font-size:13px;color:var(--ink-soft);">personas en total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" data-step="1">
+      <div class="eyebrow">Tipo de turismo</div>
+      <h1 class="qtitle">¿Qué te mueve a viajar?</h1>
+      <p class="qsub">Elige el estilo de experiencia que buscas en Colombia.</p>
+      <div class="chipgrid" data-group="tipo">
+        <button class="chip" data-value="cultural"><span class="ic">🏛️</span><span><div>Cultural e histórico</div><div class="meta">Centros históricos, museos, patrimonio</div></span></button>
+        <button class="chip" data-value="naturaleza"><span class="ic">🌿</span><span><div>Naturaleza y aventura</div><div class="meta">Montaña, selva, senderismo</div></span></button>
+        <button class="chip" data-value="descanso"><span class="ic">🏖️</span><span><div>Descanso y bienestar</div><div class="meta">Playa, spa, ritmo tranquilo</div></span></button>
+        <button class="chip" data-value="gastronomico"><span class="ic">🍽️</span><span><div>Gastronómico</div><div class="meta">Café, cocina típica, mercados</div></span></button>
+        <button class="chip" data-value="negocios"><span class="ic">🤝</span><span><div>Negocios y eventos (MICE)</div><div class="meta">Reuniones, congresos, networking</div></span></button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" data-step="2">
+      <div class="eyebrow">Duración</div>
+      <h1 class="qtitle">¿Cuánto dura tu estancia?</h1>
+      <p class="qsub">Ajustamos el itinerario y el precio total según tus días disponibles.</p>
+      <div class="chipgrid" data-group="dias">
+        <button class="chip" data-value="corta"><span class="ic">⏱️</span><span><div>1–2 días</div><div class="meta">Escala o estancia exprés</div></span></button>
+        <button class="chip" data-value="media"><span class="ic">📅</span><span><div>3–5 días</div><div class="meta">El más elegido por viajeros</div></span></button>
+        <button class="chip" data-value="larga"><span class="ic">🗓️</span><span><div>6 días o más</div><div class="meta">Recorrido completo</div></span></button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" data-step="3">
+      <div class="eyebrow">Alojamiento</div>
+      <h1 class="qtitle">¿Qué categoría de hotel prefieres?</h1>
+      <p class="qsub">Esto afecta directamente el precio final del plan.</p>
+      <div class="chipgrid" data-group="hotel">
+        <button class="chip" data-value="3estrellas"><span class="ic">⭐</span><span><div>3 estrellas · Esencial</div><div class="meta">Cómodo y económico</div></span></button>
+        <button class="chip" data-value="4estrellas"><span class="ic">⭐⭐</span><span><div>4 estrellas · Superior</div><div class="meta">Buen equilibrio precio-confort</div></span></button>
+        <button class="chip" data-value="5estrellas"><span class="ic">⭐⭐⭐</span><span><div>5 estrellas · Lujo</div><div class="meta">Máximo confort y servicio</div></span></button>
+        <button class="chip" data-value="boutique"><span class="ic">🏨</span><span><div>Boutique</div><div class="meta">Diseño, autenticidad local</div></span></button>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" data-step="4">
+      <div class="eyebrow">Alimentación</div>
+      <h1 class="qtitle">¿Alguna restricción alimentaria?</h1>
+      <p class="qsub">Adaptamos los restaurantes y experiencias gastronómicas incluidas.</p>
+      <div class="chipgrid" data-group="dieta">
+        <button class="chip" data-value="ninguna"><span class="ic">🍴</span><span><div>Ninguna</div></span></button>
+        <button class="chip" data-value="vegetariana"><span class="ic">🥗</span><span><div>Vegetariana</div></span></button>
+        <button class="chip" data-value="vegana"><span class="ic">🌱</span><span><div>Vegana</div></span></button>
+        <button class="chip" data-value="singluten"><span class="ic">🌾</span><span><div>Sin gluten</div></span></button>
+        <button class="chip" data-value="halalkosher"><span class="ic">🕊️</span><span><div>Halal / Kosher</div></span></button>
+      </div>
+    </div>
+
+    <!-- STEP 6 - MASCOTA -->
+    <div class="step" data-step="5">
+      <div class="eyebrow">Viaje con mascota</div>
+      <h1 class="qtitle">¿Viaja con mascota?</h1>
+      <p class="qsub">Adaptamos el alojamiento y las actividades para incluir a tu compañero peludo. Se aplica un recargo por mascota.</p>
+      <div class="chipgrid" data-group="mascota">
+        <button class="chip" data-value="no"><span class="ic">🚫</span><span><div>No viajo con mascota</div><div class="meta">Sin recargo adicional</div></span></button>
+        <button class="chip" data-value="perro"><span class="ic">🐕</span><span><div>Viajo con perro</div><div class="meta">+ $80.000 COP por noche · hotel pet-friendly</div></span></button>
+        <button class="chip" data-value="gato"><span class="ic">🐈</span><span><div>Viajo con gato</div><div class="meta">+ $60.000 COP por noche · hotel pet-friendly</div></span></button>
+      </div>
+      <div id="mascotaInfo" style="display:none;margin-top:14px;padding:14px 16px;background:#FFF3E9;border-radius:14px;border:1.5px solid #E0712B33;">
+        <p style="margin:0;font-size:13.5px;color:#C0571F;line-height:1.6;" id="mascotaInfoText"></p>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step" data-step="6">
+      <div class="eyebrow">Programa de viajero</div>
+      <h1 class="qtitle">Elige tu plan de puntos</h1>
+      <p class="qsub">Acumula puntos canjeables en tu próximo viaje por Colombia.</p>
+      <div class="chipgrid" data-group="plan">
+        <button class="chip" data-value="basico"><span class="ic">🥉</span><span><div>Básico</div><div class="meta">Acumulas 1% del valor del plan en puntos</div></span></button>
+        <button class="chip" data-value="plus"><span class="ic">🥈</span><span><div>Plus</div><div class="meta">2% en puntos + check-in prioritario</div></span></button>
+        <button class="chip" data-value="intensivo"><span class="ic">🥇</span><span><div>Intensivo</div><div class="meta">4% en puntos + concierge dedicado y acceso prioritario</div></span></button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="step" data-step="resultado">
+      <div class="eyebrow">Tu recomendación está lista</div>
+      <h1 class="qtitle" id="resultIntro">Este es tu plan a la medida</h1>
+      <div class="bpass" id="bpass"></div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0;">Cuéntanos tu experiencia</div>
+        <input type="text" id="fbName" placeholder="Tu nombre (opcional)" />
+        <div class="starsrow" id="starsRow"></div>
+        <textarea id="fbComment" placeholder="¿Qué te pareció la recomendación? ¿Qué mejorarías?"></textarea>
+        <div style="margin-top:10px;"><button class="btn btn-coral" style="width:100%;" id="sendFeedback">Enviar y guardar mi historia ✈</button></div>
+      </div>
+
+      <div class="card" id="testimonialsCard">
+        <div class="section-label" style="margin-top:0;">Historias recientes de viajeros</div>
+        <div id="testimonialsList"></div>
+      </div>
+
+      <div class="footerlink"><a id="goRestart">↺ Empezar una nueva búsqueda</a> &nbsp;·&nbsp; <a id="goInsights">Ver panel de insights</a></div>
+    </div>
+
+    <!-- INSIGHTS / ADMIN -->
+    <div class="step" data-step="insights">
+      <div class="eyebrow">Panel del operador</div>
+      <h1 class="qtitle">Estadística descriptiva de clientes</h1>
+      <p class="qsub">Datos en vivo de las historias recogidas en este punto interactivo (sesión actual + 3 pruebas MVP).</p>
+      <div class="statgrid">
+        <div class="statbox"><div class="num" id="statN">3</div><div class="lab">Historias recogidas</div></div>
+        <div class="statbox"><div class="num" id="statAvg">4.3</div><div class="lab">Satisfacción promedio (sobre 5)</div></div>
+      </div>
+      <div class="section-label" style="margin-top:0;">Distribución de calificaciones</div>
+      <div id="histogram"></div>
+      <div class="section-label">Lectura de las historias recogidas</div>
+      <ul class="tightlist" id="insightReading"></ul>
+      <div class="section-label">Sugerencias de mejora derivadas de los clientes</div>
+      <ul class="tightlist" id="insightActions"></ul>
+      <div class="footerlink"><a id="backFromInsights">← Volver a la recomendación</a></div>
+    </div>
+
+  </div>
+
+  <!-- ===================== ACTION BAR ===================== -->
+  <div class="actionbar" id="actionbar">
+    <button class="btn btn-ghost" id="btnBack">Atrás</button>
+    <button class="btn btn-primary" id="btnNext" disabled>Siguiente</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ATERRIZA — POP interactivo / MVP de plataforma de turismo
+   inteligente para aeropuerto. Vanilla JS, sin dependencias.
+   ========================================================= */
+
+const ROUTES = [
+  { id:"BOG-CULTURAL", tipos:["cultural","gastronomico"], dias:["corta","media"], nombre:"Bogotá Esencial",
+    destino:"Bogotá", code:"BOG·CULT", scene:["#1B2A4A","#3C4F7A"], kind:"city",
+    sitios:["Centro histórico de La Candelaria","Museo del Oro","Cerro de Monserrate","Plaza de Bolívar"],
+    condiciones:["Incluye transporte aeropuerto–hotel ida y vuelta","No incluye almuerzos ni cenas","Reserva con 24 h de anticipación","Caminata de dificultad moderada"],
+    basePrice:380000 },
+
+  { id:"CAFE-NATURALEZA", tipos:["naturaleza","gastronomico"], dias:["media","larga"], nombre:"Ruta del Café · Eje Cafetero",
+    destino:"Salento / Armenia", code:"AXM·CAFE", scene:["#16433A","#2F7A5A"], kind:"mountains",
+    sitios:["Valle de Cocora y palmas de cera","Pueblo de Salento","Finca cafetera con degustación","Parque del Café"],
+    condiciones:["Incluye guía bilingüe y degustación de café","Traslado terrestre aprox. 4 h desde el aeropuerto","Se recomienda calzado cerrado","Reserva con 72 h de anticipación"],
+    basePrice:420000 },
+
+  { id:"CTG-COLONIAL", tipos:["cultural","descanso"], dias:["media","larga"], nombre:"Cartagena Colonial & Caribe",
+    destino:"Cartagena de Indias", code:"CTG·COL", scene:["#0E5E63","#1FA39B"], kind:"wall",
+    sitios:["Ciudad Amurallada y Getsemaní","Castillo San Felipe de Barajas","Islas del Rosario"],
+    condiciones:["Incluye city tour guiado a pie","Excursión a islas sujeta a condiciones del clima","Protector solar obligatorio","Reserva con 48 h de anticipación"],
+    basePrice:460000 },
+
+  { id:"GUA-PUEBLOS", tipos:["cultural","naturaleza"], dias:["corta","media"], nombre:"Guatapé & Comuna 13",
+    destino:"Antioquia", code:"MDE·GUA", scene:["#5B2A86","#B5538C"], kind:"houses",
+    sitios:["Piedra del Peñol","Pueblo de Guatapé","Comuna 13 y arte urbano en Medellín"],
+    condiciones:["Incluye subida guiada a la Piedra (740 escalones)","Comuna 13 incluye transporte por cable","Avisar con antelación si hay movilidad reducida","Reserva con 48 h de anticipación"],
+    basePrice:400000 },
+
+  { id:"TAY-AVENTURA", tipos:["naturaleza","descanso"], dias:["media","larga"], nombre:"Caribe Salvaje · Tayrona",
+    destino:"Santa Marta", code:"SMR·TAY", scene:["#0B5345","#2E9C70"], kind:"jungle",
+    sitios:["Parque Nacional Natural Tayrona","Playa Cabo San Juan","Pueblo de Minca"],
+    condiciones:["Incluye entrada al parque y caminata ecológica","No incluye hospedaje dentro del parque","Requiere condición física básica","Se recomienda esquema de vacunación vigente"],
+    basePrice:480000 },
+
+  { id:"SAI-DESCANSO", tipos:["descanso"], dias:["media","larga"], nombre:"San Andrés · Mar de Siete Colores",
+    destino:"San Andrés", code:"ADZ·SAI", scene:["#0B4D6B","#2FA3C9"], kind:"beach",
+    sitios:["Playa principal y Spratt Bight","Hoyo Soplador","Snorkel en arrecife de coral"],
+    condiciones:["Tarjeta de turismo obligatoria (no incluida)","Actividades acuáticas sujetas a condiciones del mar","Ideal para familias y parejas","Reserva con 72 h de anticipación"],
+    basePrice:520000 },
+
+  { id:"BOG-NEGOCIOS", tipos:["negocios"], dias:["corta","media"], nombre:"Bogotá Corporativo & MICE",
+    destino:"Bogotá", code:"BOG·MICE", scene:["#1F2A44","#5B6B95"], kind:"tower",
+    sitios:["Centro Internacional de negocios","Zona T","Espacios de coworking y salas de eventos"],
+    condiciones:["Incluye traslado ejecutivo y sala de reuniones por 4 h","Servicio de interpretación bajo solicitud","Check-in prioritario en el hotel asociado"],
+    basePrice:650000 },
+
+  { id:"AMZ-MISTICO", tipos:["naturaleza"], dias:["larga"], nombre:"Amazonas Místico · Leticia",
+    destino:"Leticia", code:"LET·AMZ", scene:["#1B3B2A","#3E7A4A"], kind:"river",
+    sitios:["Reserva natural Tanimboca","Lago Tarapoto","Encuentro con comunidades indígenas"],
+    condiciones:["Incluye navegación fluvial y guía local","Esquema de vacunación contra fiebre amarilla obligatorio","El vuelo doméstico no está incluido en el precio mostrado"],
+    basePrice:600000 },
+];
+
+const HOTEL_MULT = { "3estrellas":1.0, "4estrellas":1.35, "5estrellas":1.9, "boutique":1.6 };
+const HOTEL_LABEL = { "3estrellas":"3★ Esencial","4estrellas":"4★ Superior","5estrellas":"5★ Lujo","boutique":"Boutique" };
+const PERFIL_MULT = { individual:1.0, pareja:0.95, familia:0.85, grupo:0.8, negocios:1.15 };
+const PERFIL_LABEL = { individual:"Individual", pareja:"En pareja", familia:"Familia", grupo:"Grupo de amigos", negocios:"Negocios" };
+const DIAS_NUM = { corta:2, media:4, larga:7 };
+const DIAS_LABEL = { corta:"1–2 días", media:"3–5 días", larga:"6+ días" };
+const DIETA_LABEL = { ninguna:"Ninguna", vegetariana:"Vegetariana", vegana:"Vegana", singluten:"Sin gluten", halalkosher:"Halal / Kosher" };
+const DIETA_SURCHARGE = { ninguna:0, vegetariana:5000, vegana:12000, singluten:15000, halalkosher:18000 };
+const PLAN_LABEL = { basico:"Básico", plus:"Plus", intensivo:"Intensivo" };
+const PLAN_RATE = { basico:0.01, plus:0.02, intensivo:0.04 };
+
+const STEP_NAMES = ["Quién viaja","Tipo de turismo","Duración","Alojamiento","Alimentación","¿Viaja con mascota?","Plan de puntos"];
+
+let state = { perfil:null, tipo:null, dias:null, hotel:null, dieta:null, mascota:"no", plan:null, personas:1 };
+let currentLang = "es";
+
+const TEXTS = {
+  es: {
+    tagline: "Tu próximo destino, antes de salir por la puerta.",
+    paso: "PASO", de: "DE",
+    stepNames: ["Quién viaja","Tipo de turismo","Duración","Alojamiento","Alimentación","Plan de puntos"],
+    personasTitle: "¿CUÁNTAS PERSONAS VIAJAN?",
+    personasLabel: "personas en total",
+    siguiente: "Siguiente", atras: "Atrás", generar: "Generar mi recomendación →",
+    enviar: "Enviar y guardar mi historia ✈",
+    cuantanos: "Cuéntanos tu experiencia",
+    historias: "Historias recientes de viajeros",
+    reiniciar: "↺ Empezar una nueva búsqueda",
+    insights: "Ver panel de insights",
+  },
+  en: {
+    tagline: "Your next destination, before you walk out the door.",
+    paso: "STEP", de: "OF",
+    stepNames: ["Who travels","Type of tourism","Duration","Accommodation","Diet","Points plan"],
+    personasTitle: "HOW MANY TRAVELERS?",
+    personasLabel: "people in total",
+    siguiente: "Next", atras: "Back", generar: "Get my recommendation →",
+    enviar: "Submit & save my story ✈",
+    cuantanos: "Share your experience",
+    historias: "Recent traveler stories",
+    reiniciar: "↺ Start a new search",
+    insights: "View insights panel",
+  }
+};
+
+function toggleLang(){
+  currentLang = currentLang === "es" ? "en" : "es";
+  const T = TEXTS[currentLang];
+  document.getElementById("tagline").textContent = T.tagline;
+  document.getElementById("personasTitle").textContent = T.personasTitle;
+  document.getElementById("personasLabel").textContent = T.personasLabel;
+  document.getElementById("langBtn").textContent = currentLang === "es" ? "ES / EN" : "EN / ES";
+  document.getElementById("btnNext").textContent = (currentStep===6) ? T.generar : T.siguiente;
+  document.getElementById("btnBack").textContent = T.atras;
+  if(document.getElementById("stepLabel"))
+    document.getElementById("stepLabel").textContent = typeof currentStep==="number"
+      ? `${T.paso} ${currentStep+1} ${T.de} 6` : "";
+  if(document.getElementById("stepName") && typeof currentStep==="number")
+    document.getElementById("stepName").textContent = T.stepNames[currentStep]||"";
+}
+
+function changePersonas(delta){
+  state.personas = Math.max(1, Math.min(20, (state.personas||1) + delta));
+  document.getElementById("personasNum").textContent = state.personas;
+}
+let currentStep = 0; // 0..5, "resultado", "insights"
+
+let testimonios = [
+  { name:"María José R.", perfil:"individual", rating:5, comment:"Súper fácil de usar, en menos de un minuto ya tenía mi plan de Bogotá listo. Me encantaron las tarjetas con las condiciones bien claras.", route:"Bogotá Esencial" },
+  { name:"Familia Rodríguez", perfil:"familia", rating:4, comment:"Muy completo y visual. Nos habría gustado ver de una vez el precio total para los 4 integrantes, no solo por persona.", route:"Ruta del Café · Eje Cafetero" },
+  { name:"Carlos Andrés P.", perfil:"negocios", rating:4, comment:"Rápido y directo al grano, ideal antes de abordar un vuelo. Echo en falta una versión en inglés para mis colegas extranjeros.", route:"Bogotá Corporativo & MICE" },
+];
+
+let lastRoute = null, lastPrice = null;
+let fbRating = 0;
+
+/* ---------- Scene illustrations (signature element) ---------- */
+function sceneSVG(kind, c1, c2){
+  const grad = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="400" height="200" fill="url(#g)"/>`;
+  let shapes = "";
+  const sun = `<circle cx="335" cy="42" r="20" fill="#F7D774" opacity="0.85"/>`;
+  if(kind==="city"){
+    shapes = sun + `<path d="M0,150 L40,110 L70,140 L110,90 L150,150 Z" fill="#0E1830" opacity="0.5"/>
+      <rect x="40" y="150" width="22" height="50" fill="#0E1830"/><rect x="70" y="160" width="18" height="40" fill="#0E1830"/>
+      <rect x="95" y="145" width="20" height="55" fill="#0E1830"/><rect x="120" y="155" width="16" height="45" fill="#0E1830"/>
+      <rect x="160" y="140" width="20" height="60" fill="#0E1830"/><rect x="186" y="150" width="16" height="50" fill="#0E1830"/>
+      <rect x="210" y="158" width="22" height="42" fill="#0E1830"/><circle cx="55" cy="100" r="5" fill="#F7D774"/>`;
+  } else if(kind==="mountains"){
+    shapes = sun + `<path d="M0,170 Q100,120 200,165 T400,150 V200 H0 Z" fill="#0E2A20" opacity="0.55"/>
+      ${[60,110,160,250,300].map((x,i)=>`<rect x="${x}" y="${60+ (i%2)*15}" width="6" height="${90-(i%2)*12}" fill="#0E2A20"/><ellipse cx="${x+3}" cy="${60+(i%2)*15-6}" rx="14" ry="8" fill="#143A2A"/>`).join("")}`;
+  } else if(kind==="wall"){
+    shapes = sun + `<path d="M0,180 Q200,160 400,180 V200 H0 Z" fill="#0A3A3C" opacity="0.6"/>
+      <rect x="20" y="130" width="360" height="34" fill="#0A3A3C"/>
+      ${[20,55,90,125,160,195,230,265,300,335].map(x=>`<rect x="${x}" y="118" width="18" height="14" fill="#0A3A3C"/>`).join("")}`;
+  } else if(kind==="houses"){
+    shapes = sun + `<path d="M250,40 Q330,40 320,140 L180,140 Q190,50 250,40 Z" fill="#3A1B57" opacity="0.55"/>
+      ${[20,70,120,170].map((x,i)=>`<rect x="${x}" y="140" width="40" height="50" fill="${['#E0712B','#C98F00','#2FA3C9','#E0712B'][i]}"/><polygon points="${x-4},140 ${x+20},118 ${x+44},140" fill="#3A1B57"/>`).join("")}`;
+  } else if(kind==="jungle"){
+    shapes = sun + `<path d="M0,160 Q200,130 400,158 V200 H0 Z" fill="#072E22" opacity="0.6"/>
+      ${[30,80,260,330].map(x=>`<rect x="${x}" y="90" width="5" height="70" fill="#072E22"/><ellipse cx="${x+10}" cy="92" rx="22" ry="10" fill="#0E4A33"/><ellipse cx="${x-8}" cy="98" rx="20" ry="9" fill="#0E4A33"/>`).join("")}
+      <path d="M150,150 Q175,100 230,90 Q200,130 190,160 Z" fill="#0A3A28"/>`;
+  } else if(kind==="beach"){
+    shapes = sun + `<path d="M0,165 Q200,145 400,168 V200 H0 Z" fill="#0A3550" opacity="0.55"/>
+      <path d="M0,182 Q200,168 400,184 V200 H0 Z" fill="#E7DDBE" opacity="0.9"/>
+      <rect x="55" y="95" width="6" height="75" fill="#0A3550"/><ellipse cx="65" cy="98" rx="24" ry="10" fill="#0E4A33"/><ellipse cx="45" cy="104" rx="20" ry="9" fill="#0E4A33"/>`;
+  } else if(kind==="tower"){
+    shapes = sun + `${[30,80,130,180,230,280,330].map((x,i)=>{const h=60+((i*37)%70);return `<rect x="${x}" y="${190-h}" width="34" height="${h}" fill="#0E1830" opacity="0.85"/>`;}).join("")}`;
+  } else if(kind==="river"){
+    shapes = `<path d="M-20,60 Q120,30 180,70 Q260,110 420,80 V200 H-20 Z" fill="#0B2C20" opacity="0.55"/>
+      <path d="M-20,150 Q150,110 250,150 Q330,178 420,150 V200 H-20 Z" fill="#1B5A4A" opacity="0.7"/>
+      <path d="M180,150 q14,-6 26,0 q-4,8 -26,0 Z" fill="#5C3A1E"/>`;
+  }
+  return `<svg class="scene" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${grad}${shapes}</svg>`;
+}
+
+/* ---------- Recommendation engine ---------- */
+function pickRoute(){
+  let candidates = ROUTES.filter(r => r.tipos.includes(state.tipo));
+  if(state.perfil === "negocios"){
+    const biz = ROUTES.find(r => r.id === "BOG-NEGOCIOS");
+    if(biz) return biz;
+  }
+  let withDuration = candidates.filter(r => r.dias.includes(state.dias));
+  let pool = withDuration.length ? withDuration : candidates.length ? candidates : ROUTES;
+  // score by profile affinity
+  const score = (r) => {
+    let s = 0;
+    if(r.dias.includes(state.dias)) s += 2;
+    if(state.perfil==="familia" && (r.id==="SAI-DESCANSO"||r.id==="GUA-PUEBLOS"||r.id==="CAFE-NATURALEZA")) s += 1;
+    if(state.perfil==="grupo" && (r.id==="TAY-AVENTURA"||r.id==="GUA-PUEBLOS")) s += 1;
+    if(state.perfil==="pareja" && (r.id==="CTG-COLONIAL"||r.id==="SAI-DESCANSO")) s += 1;
+    return s;
+  };
+  pool.sort((a,b)=>score(b)-score(a));
+  return pool[0];
+}
+
+const MASCOTA_SURCHARGE = { "no":0, "perro":80000, "gato":60000 };
+const MASCOTA_LABEL = { "no":"Sin mascota","perro":"Perro 🐕","gato":"Gato 🐈" };
+const MASCOTA_COND = {
+  "no": "",
+  "perro": "Alojamiento pet-friendly incluido · el hotel debe confirmar disponibilidad para mascotas · se recomienda llevar cartilla de vacunación.",
+  "gato": "Alojamiento pet-friendly incluido · el hotel debe confirmar disponibilidad para mascotas · se recomienda transportín y cartilla de vacunación."
+};
+
+function computePrice(route){
+  const days = DIAS_NUM[state.dias];
+  const hotelMult = HOTEL_MULT[state.hotel];
+  const perfilMult = PERFIL_MULT[state.perfil];
+  const dietSurcharge = DIETA_SURCHARGE[state.dieta] || 0;
+  const petSurcharge = (MASCOTA_SURCHARGE[state.mascota] || 0) * days;
+  const perDay = route.basePrice * hotelMult * perfilMult + dietSurcharge;
+  const total = Math.round((perDay * days + petSurcharge) / 1000) * 1000;
+  return total;
+}
+
+function formatCOP(n){ return "$ " + n.toLocaleString("es-CO") + " COP"; }
+
+function buildBarcode(seedStr){
+  let bars = "";
+  let seed = seedStr.split("").reduce((a,c)=>a+c.charCodeAt(0),0);
+  for(let i=0;i<46;i++){
+    seed = (seed * 9301 + 49297) % 233280;
+    const w = 2 + (seed % 4);
+    const h = 14 + (seed % 20);
+    bars += `<div style="width:${w}px;height:${h}px;"></div>`;
+  }
+  return bars;
+}
+
+function renderResult(){
+  const route = pickRoute();
+  const price = computePrice(route);
+  lastRoute = route; lastPrice = price;
+  const pts = Math.round(price * PLAN_RATE[state.plan]);
+
+  document.getElementById("bpass").innerHTML = `
+    <div class="bpass-top">
+      <div class="bpass-route">
+        <div class="bpass-city">BOG<small>AEROPUERTO</small></div>
+        <div class="bpass-arrow">✈ →</div>
+        <div class="bpass-city" style="text-align:right;">${route.destino}<small>${route.code}</small></div>
+      </div>
+      ${sceneSVG(route.kind, route.scene[0], route.scene[1])}
+      <h2 class="bpass-name">${route.nombre}</h2>
+      <p class="bpass-sub">Plan para ${PERFIL_LABEL[state.perfil].toLowerCase()} · ${DIAS_LABEL[state.dias]} · ${HOTEL_LABEL[state.hotel]}</p>
+      <div class="bpass-gridinfo">
+        <div class="infocell"><div class="lab">Tipo de turismo</div><div class="val">${state.tipo.charAt(0).toUpperCase()+state.tipo.slice(1)}</div></div>
+        <div class="infocell"><div class="lab">Alimentación</div><div class="val">${DIETA_LABEL[state.dieta]}</div></div>
+        <div class="infocell"><div class="lab">Mascota</div><div class="val">${MASCOTA_LABEL[state.mascota||"no"]}</div></div>
+        <div class="infocell"><div class="lab">Viajeros</div><div class="val">${state.personas} persona${state.personas>1?"s":""}</div></div>
+      </div>
+    </div>
+    <div class="perforation"></div>
+    <div class="bpass-bottom">
+      <div class="section-label">Sitios incluidos en la ruta</div>
+      <ul class="tightlist">${route.sitios.map(s=>`<li>${s}</li>`).join("")}</ul>
+      <div class="section-label">Condiciones del recorrido</div>
+      <ul class="tightlist">${route.condiciones.map(s=>`<li>${s}</li>`).join("")}${(state.mascota&&state.mascota!=="no")?`<li style="color:var(--coral-dark);font-weight:600;">${MASCOTA_COND[state.mascota]}</li>`:""}</ul>
+      <div class="pricewrap">
+        <div style="width:100%;">
+          <div class="pl">Precio estimado por persona</div>
+          <div class="pv">${formatCOP(price)}<br><small>${DIAS_LABEL[state.dias]} · ${HOTEL_LABEL[state.hotel]}</small></div>
+          ${(state.personas||1) > 1 ? `<div style="margin-top:8px;padding:10px 14px;background:rgba(20,107,100,0.12);border-radius:12px;"><div style="font-size:12px;color:var(--teal);font-weight:600;margin-bottom:2px;">TOTAL DEL GRUPO</div><div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--teal);">${formatCOP(price * (state.personas||1))}</div><div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">${state.personas} personas · incluye todos los costos</div></div>` : ""}
+          ${(state.mascota && state.mascota!=="no") ? `<div style="margin-top:8px;padding:8px 12px;background:#FFF3E9;border-radius:10px;font-size:13px;color:var(--coral-dark);">${MASCOTA_LABEL[state.mascota]} incluido/a · recargo: ${formatCOP(MASCOTA_SURCHARGE[state.mascota]*(DIAS_NUM[state.dias]||1))}</div>` : ""}
+        </div>
+        <span class="badge-tier" style="align-self:flex-start;">PLAN ${PLAN_LABEL[state.plan].toUpperCase()}</span>
+      </div>
+      <div class="pointsrow">★ Ganas ${pts.toLocaleString("es-CO")} puntos ATERRIZA con este plan</div>
+      <div class="barcode">${buildBarcode(route.id+state.dias+state.hotel)}</div>
+    </div>
+  `;
+  renderTestimonials();
+}
+
+function renderTestimonials(){
+  const list = document.getElementById("testimonialsList");
+  list.innerHTML = testimonios.slice(-5).reverse().map(t=>`
+    <div class="testimonial">
+      <div class="t-head"><span class="t-name">${t.name||"Viajero anónimo"}</span><span class="t-stars">${"★".repeat(t.rating)}${"☆".repeat(5-t.rating)}</span></div>
+      <div class="t-meta">${PERFIL_LABEL[t.perfil]||""} · ${t.route||""}</div>
+      <div class="t-comment">${t.comment}</div>
+    </div>`).join("");
+}
+
+function renderInsights(){
+  const n = testimonios.length;
+  const avg = (testimonios.reduce((a,t)=>a+t.rating,0)/n).toFixed(1);
+  document.getElementById("statN").textContent = n;
+  document.getElementById("statAvg").textContent = avg;
+  const counts = [0,0,0,0,0];
+  testimonios.forEach(t=>counts[t.rating-1]++);
+  const max = Math.max(...counts,1);
+  document.getElementById("histogram").innerHTML = [5,4,3,2,1].map(star=>{
+    const c = counts[star-1];
+    return `<div class="histobar"><div class="hl">${star} ★</div><div class="histotrack"><div class="histofill" style="width:${(c/max*100)}%"></div></div><div class="hc">${c}</div></div>`;
+  }).join("");
+
+  document.getElementById("insightReading").innerHTML = `
+    <li>El plan piloto (n=${n}) muestra una satisfacción promedio de ${avg}/5, con tiempos de interacción cortos reportados por los viajeros.</li>
+    <li>Los perfiles individual y de negocios valoran sobre todo la velocidad: obtener una recomendación clara en menos de un minuto.</li>
+    <li>El perfil familiar pide visibilidad del costo total del grupo, no solo del valor por persona.</li>
+    <li>Se repite la solicitud de soporte multilingüe (especialmente inglés) para viajeros internacionales y delegaciones de negocios.</li>`;
+  document.getElementById("insightActions").innerHTML = `
+    <li>Agregar un selector de número de acompañantes para mostrar el precio total del plan, además del valor por persona.</li>
+    <li>Incorporar al menos una segunda lengua (inglés) en la interfaz, priorizando el flujo de negocios.</li>
+    <li>Mantener el tiempo de interacción por debajo de 90 segundos como meta de producto en futuras iteraciones.</li>
+    <li>Explorar un resumen descargable (PDF) de la tarjeta de embarque turística para conservar la recomendación tras salir del punto interactivo.</li>`;
+}
+
+/* ---------- Navigation / state ---------- */
+const STEP_GROUPS = ["perfil","tipo","dias","hotel","dieta","mascota","plan"];
+
+function renderGateDots(){
+  const wrap = document.getElementById("gatedots");
+  wrap.innerHTML = "";
+  for(let i=0;i<7;i++){
+    const d = document.createElement("div");
+    d.className = "gatedot" + (i<currentStep ? " done" : i===currentStep ? " current" : "");
+    wrap.appendChild(d);
+  }
+}
+
+function showStep(step){
+  document.querySelectorAll(".step").forEach(el=>el.classList.remove("active"));
+  const sel = (typeof step === "number") ? `[data-step="${step}"]` : `[data-step="${step}"]`;
+  const el = document.querySelector(`.step${sel}`);
+  if(el) el.classList.add("active");
+
+  const progressWrap = document.getElementById("progressWrap");
+  const actionbar = document.getElementById("actionbar");
+
+  if(step === "resultado" || step === "insights"){
+    progressWrap.style.display = "none";
+    actionbar.style.display = "none";
+  } else {
+    progressWrap.style.display = "block";
+    actionbar.style.display = "flex";
+    const T2 = (typeof currentLang!=="undefined" && TEXTS) ? TEXTS[currentLang] : {paso:"PASO",de:"DE"};
+    document.getElementById("stepLabel").textContent = `${T2.paso} ${step+1} ${T2.de} 7`;
+    document.getElementById("stepName").textContent = STEP_NAMES[step];
+    document.getElementById("progressFill").style.width = ((step+1)/7*100) + "%";
+    renderGateDots();
+    document.getElementById("btnBack").style.visibility = step===0 ? "hidden" : "visible";
+    const curGroup = STEP_GROUPS[step];
+    const curVal = state[curGroup];
+    document.getElementById("btnNext").disabled = curGroup === "mascota" ? false : !curVal;
+    document.getElementById("btnNext").textContent = step===6 ? "Generar mi recomendación →" : "Siguiente";
+  }
+}
+
+function bindChips(){
+  document.querySelectorAll(".chipgrid").forEach(group=>{
+    const key = group.getAttribute("data-group");
+    group.querySelectorAll(".chip").forEach(chip=>{
+      chip.addEventListener("click", ()=>{
+        group.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected"));
+        chip.classList.add("selected");
+        state[key] = chip.getAttribute("data-value");
+        document.getElementById("btnNext").disabled = false;
+
+        // ── SPRINT 5: mostrar selector de personas para familia/grupo ──
+        if(key === "perfil"){
+          const pw = document.getElementById("personasWrap");
+          const val = chip.getAttribute("data-value");
+          if(pw){
+            if(val === "familia" || val === "grupo"){
+              pw.style.display = "block";
+            } else {
+              pw.style.display = "none";
+            }
+          }
+          if(val === "individual" || val === "negocios") state.personas = 1;
+          else if(val === "pareja") state.personas = 2;
+          else if(val === "familia") state.personas = 4;
+          else if(val === "grupo") state.personas = 6;
+          const pn = document.getElementById("personasNum");
+          if(pn) pn.textContent = state.personas;
+        }
+
+        // ── SPRINT 5 v2: info de mascota ──
+        if(key === "mascota"){
+          const mi = document.getElementById("mascotaInfo");
+          const mt = document.getElementById("mascotaInfoText");
+          const val = chip.getAttribute("data-value");
+          state.mascota = val;
+          if(mi && mt){
+            if(val !== "no"){
+              mt.textContent = MASCOTA_COND[val] || "";
+              mi.style.display = "block";
+            } else {
+              mi.style.display = "none";
+            }
+          }
+        }
+      });
+    });
+  });
+}
+
+document.getElementById("btnNext").addEventListener("click", ()=>{
+  if(currentStep < 6){ currentStep++; showStep(currentStep); }
+  else { currentStep = "resultado"; showStep("resultado"); renderResult(); }
+});
+document.getElementById("btnBack").addEventListener("click", ()=>{
+  if(typeof currentStep === "number" && currentStep>0){ currentStep--; showStep(currentStep); }
+});
+document.getElementById("goRestart").addEventListener("click", ()=>{
+  state = { perfil:null, tipo:null, dias:null, hotel:null, dieta:null, mascota:'no', plan:null, personas:1 };
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected"));
+  const pw2 = document.getElementById("personasWrap");
+  if(pw2) pw2.style.display = "none";
+  const mi2 = document.getElementById("mascotaInfo");
+  if(mi2) mi2.style.display = "none";
+  currentStep = 0; showStep(0);
+});
+document.getElementById("goInsights").addEventListener("click", ()=>{ showStep("insights"); renderInsights(); });
+document.getElementById("backFromInsights").addEventListener("click", ()=>{ showStep("resultado"); });
+
+/* stars */
+function buildStars(){
+  const row = document.getElementById("starsRow");
+  row.innerHTML = "";
+  for(let i=1;i<=5;i++){
+    const s = document.createElement("div");
+    s.className = "star"; s.textContent = "★"; s.dataset.v = i;
+    s.addEventListener("click", ()=>{ fbRating = i; updateStars(); });
+    row.appendChild(s);
+  }
+}
+function updateStars(){
+  document.querySelectorAll(".star").forEach(s=>{
+    s.classList.toggle("on", parseInt(s.dataset.v) <= fbRating);
+  });
+}
+document.getElementById("sendFeedback").addEventListener("click", ()=>{
+  if(fbRating===0){ alert("Selecciona una calificación de estrellas antes de enviar."); return; }
+  const name = document.getElementById("fbName").value.trim();
+  const comment = document.getElementById("fbComment").value.trim() || "Sin comentarios adicionales.";
+  testimonios.push({ name: name || "Viajero anónimo", perfil: state.perfil, rating: fbRating, comment, route: lastRoute ? lastRoute.nombre : "" });
+  document.getElementById("fbName").value=""; document.getElementById("fbComment").value=""; fbRating=0; updateStars();
+  renderTestimonials();
+  alert("¡Gracias! Tu historia quedó registrada en el panel de insights.");
+});
+
+bindChips();
+buildStars();
+
+/* ---------- Deep-link states for evidence / screenshots ---------- */
+(function init(){
+  const hash = window.location.hash.replace("#","");
+  if(hash === "resultado-demo"){
+    state = { perfil:"individual", tipo:"cultural", dias:"corta", hotel:"4estrellas", dieta:"ninguna", mascota:"no", plan:"plus", personas:1 };
+    currentStep = "resultado"; showStep("resultado"); renderResult();
+  } else if(hash === "insights-demo"){
+    currentStep = "insights"; showStep("insights"); renderInsights();
+  } else {
+    showStep(0);
+  }
+})();
+</script>
+</body>
+</html>
